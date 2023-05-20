@@ -80,7 +80,7 @@ end;
 - <a href="https://tinybiggames.com/" target="_blank">tinyBigGAMES Homepage</a>
 
 <p align="center">
-<img src="media/delphi.png" alt="Delphi">
+<img src="media/Delphi.png" alt="Delphi">
 </p>
 <h5 align="center">
 
