@@ -1,2 +1,2 @@
 # PhippsAI
-Your Personal AI Assistant 
+Your Personal AI Butler
