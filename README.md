@@ -17,6 +17,7 @@ We are looking for a limited number of beta testers for free, full access to hel
 - API key can be read from `PhippsAIApiKey` environment variable if defined
 - Automatically sanitizes input to minimize errors
 - Ability to define proxy settings
+- Rate limiting implemented to prevent abuse
 - Indie developer friendly, affordable with good performance.
 - Only **$5.00US/monthly**, sponsor project for full access. Note, API key generation is a manual process at the moment. So there maybe a short delay after sign-up before receiving your key. We will however, get it out ASAP.
 
@@ -28,6 +29,10 @@ We are looking for a limited number of beta testers for free, full access to hel
 - Get your API Key by sponsoring this project, https://github.com/sponsors/tinyBigGAMES, we will then issues you an API key for full access as long as your sponsorship remains active.
 
 - Define environment variable `PhippsAIApiKey` and assigned your API key. You may have to reboot your machine for it to take effect.
+
+- Load the Delphi project group file **PhippsAI (Delphi).groupproj** in `installdir\distro\repo\examples\pascal`
+
+- See examples for more information on usage
 
 ```Delphi
 // Basic example showing how to query PhippsAI
@@ -68,7 +73,6 @@ begin
   end;
 end;
 ```
-- Load the Delphi project group file **PhippsAI (Delphi).groupproj** in `installdir\distro\repo\examples\pascal`
 
 ### Media
 
