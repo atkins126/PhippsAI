@@ -89,7 +89,7 @@ uses
 const
   CR = #10;
   LF = #13;
-  LFCR = LF+CR;
+  CRLF = CR+LF;
 
   {$IFDEF PHIPPSAI_LOCAL}
   CUrl = 'http://127.0.0.1:8080/api/v1/chat';
@@ -133,7 +133,7 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
     procedure SetProxy(const aHost: string; aPort: Integer; const aUserName: string = ''; const aPassword: string = ''; const AScheme: string = '');
-    procedure Chat;
+    procedure Ask;
   end;
 
 { Routines }
@@ -314,7 +314,7 @@ begin
   FProxy.Create(aHost, aPort, aUserName, aPassword, aScheme);
 end;
 
-procedure TPhippsAIApi.Chat;
+procedure TPhippsAIApi.Ask;
 var
   LClient: THTTPClient;
   LResponse: IHTTPResponse;

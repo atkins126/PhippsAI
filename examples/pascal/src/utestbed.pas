@@ -80,6 +80,7 @@ interface
 
 uses
   System.SysUtils,
+  System.Classes,
   PhippsAI;
 
 procedure RunTest(const aNum: Integer);
@@ -89,11 +90,17 @@ implementation
 
 procedure Pause;
 begin
-  WriteLn;
-  Write('Press ENTER to continue...');
+  Write(CRLF+'Press ENTER to continue...');
   ReadLn;
 end;
 
+{ ---------------------------------------------------------------------------
+  This example demonstrates the process of configuring and invoking the chat
+  endpoint by providing a question and awaiting a response. The Ask call
+  operates in a blocking manner, thereby halting execution until it completes
+  successfully or encounters an error. In a subsequent example, we will
+  illustrate the usage of the chat endpoint in a non-blocking manner.
+----------------------------------------------------------------------------- }
 procedure Test01;
 var
   LApi: TPhippsAIApi;
@@ -113,17 +120,97 @@ begin
     LApi.Question := 'what is the Delphi language?';
 
     // display question
-    WriteLn(LFCR+'Question: '+LFCR, LApi.Question);
+    WriteLn(CRLF+'Question: '+CRLF, LApi.Question);
 
     // call chat api
-    LApi.Chat;
+    LApi.Ask;
 
     if LApi.Success then
       // display answer on success
-      WriteLn(LFCR+'Answer: '+LFCR, LApi.Answer)
+      WriteLn(CRLF+'Answer: '+CRLF, LApi.Answer)
     else
       // otherwise display error message
-      WriteLn(LFCR+'Error: '+LFCR, LApi.Error);
+      WriteLn(CRLF+'Error: '+CRLF, LApi.Error);
+  finally
+    // free api instance
+    LApi.Free;
+  end;
+end;
+
+{ ---------------------------------------------------------------------------
+  This example serves as a fundamental illustration of a chatbot,
+  demonstrating how to retain context using the Language Model (LM) and
+  engage in a conversation. It is important to note that this example does
+  not account for token limitations. As the conversation progresses and
+  approaches the token limit, the LM will respond with an error message
+  indicating that the input size exceeds the maximum allowable tokens. In a
+  forthcoming example, we will showcase a solution for effectively managing
+  this issue.
+----------------------------------------------------------------------------- }
+procedure Test02;
+var
+  LApi: TPhippsAIApi;
+  LContext: TStringList;
+  LPrompt: string;
+  LResponse: string;
+begin
+  LApi := TPhippsAIApi.Create;
+  try
+    LContext := TStringList.Create;
+    try
+      // init your api key, if not defined here, it will try to read it from
+      // PhippsAIApiKey environment variable
+
+      //LApi.ApiKey := 'YOUR_API_KEY';
+
+      // init your assistant
+      LApi.Assistant := 'PhippsAI, your AI assistent';
+
+      // display intro
+      WriteLn(CRLF+'Hello, I am ', LApi.Assistant, CRLF);
+
+      // start chat loop
+      repeat
+        // display question prompt and wait for input
+        WriteLn('Question:');
+        ReadLn(LPrompt);
+
+        // check the promp commands: quit
+        if (LPrompt = 'q') or (LPrompt = 'quit') then
+          Break;
+
+        // add prompt to context
+        LContext.Add(LPrompt);
+
+        // init the question you wish to ask
+        LApi.Question := LContext.Text;
+
+        // ask you question
+        LApi.Ask;
+
+        if LApi.Success then
+          begin
+            // if there is success then add answer to context
+            LResponse := LApi.Answer;
+            LContext.Add(LResponse);
+          end
+        else
+          begin
+            // otherwise just get the error message
+            LResponse := LApi.Error;
+          end;
+
+        // display the response
+        WriteLn(CRLF+CRLF+'Answer:');
+        WriteLn(LResponse+CRLF);
+
+      // continue to loop until break
+      until False;
+
+    finally
+      // free context instance
+      LContext.Free;
+    end;
   finally
     // free api instance
     LApi.Free;
@@ -134,12 +221,13 @@ procedure RunTest(const aNum: Integer);
 begin
   case aNum of
     1: Test01;
+    2: Test02;
   end;
 end;
 
 procedure RunTests;
 begin
-  RunTest(1);
+  RunTest(2);
   Pause;
 end;
 
