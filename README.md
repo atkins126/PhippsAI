@@ -21,6 +21,21 @@ We are looking for a limited number of beta testers for free, full access to hel
 - Indie developer friendly, affordable with good performance.
 - Only **$5.00US/monthly**, sponsor project for full access. Note, API key generation is a manual process at the moment. So there maybe a short delay after sign-up before receiving your key. We will however, get it out ASAP.
 
+### Benefits 
+- Cost-effectiveness: Our service provides full access to the endpoint at a significantly lower cost of only $5 per month. This makes it highly affordable for indie developers who may have limited budgets.
+
+- Ease of use: We prioritize user-friendly integration, ensuring that developers can easily integrate our AI capabilities into their applications without facing unnecessary complexity or technical challenges.
+
+- Focus on supporting indie developers: Our service specifically caters to indie developers, understanding their unique needs and constraints. We strive to empower them with access to high-quality language models while keeping costs minimal.
+
+- Minimum cost for to LLM: By utilizing high-quality large language models, we provide developers access to cutting-edge AI capabilities at a fraction of the cost compared to other options. This allows developers to leverage state-of-the-art technology without incurring exorbitant expenses.
+
+- Enables app AI integration without high expenses: Our service alleviates the burden of high expenses, allowing developers to concentrate on integrating AI into their applications seamlessly. With affordable access to our service, developers can focus on enhancing their app's functionality rather than worrying about costly infrastructure.
+
+- Safeguards against abuse: We have implemented robust safeguards to prevent abuse of our service, ensuring a fair and enjoyable experience for all users. These measures maintain the quality and availability of our AI capabilities.
+
+In summary, choosing our PhippsAI service provides a cost-effective, user-friendly, and indie developer-focused solution that leverages high-quality language models while safeguarding against abuse.
+
 ### Minimum Requirements 
 - Windows 10
 - <a href="https://www.embarcadero.com/products/delphi/starter" target="_blank">Delphi Community Edition</a>
