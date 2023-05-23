@@ -6,37 +6,6 @@
 
 Integrate with tinyBigGAMES's **PhippsAI** API seamlessly from <a href="https://www.embarcadero.com/es/products/delphi" target="_blank">Delphi</a>. 
 
-### Beta Testers
-We are looking for a limited number of beta testers for free, full access to help us test the service. If you are interested:
-- Contact us at: https://tinybiggames.com/contact
-- Fill out your Name and a working email and ask for beta access
-- We will email your beta API key to the email entered
-
-### Use Cases
-Integrating a quality Language Model (LLM) into your application can unlock various powerful use cases. Here are some top use cases for integrating an LLM:
-
-- Natural Language Processing: LLMs excel at understanding and generating human-like text, enabling applications to process and interpret natural language inputs from users. This can be used for tasks such as sentiment analysis, language translation, chatbots, and virtual assistants.
-
-- Content Generation: LLMs can generate high-quality content on a wide range of topics. They can be used to automatically create articles, blog posts, product descriptions, social media posts, and personalized recommendations.
-
-- Customer Support: LLMs can provide automated customer support by understanding and responding to user queries. They can handle common support questions, provide relevant information, and offer solutions to customer issues, reducing the workload on support teams.
-
-- Creative Writing and Storytelling: LLMs can assist in generating creative writing pieces, including fiction, poetry, and screenplay drafts. They can act as writing assistants, offering suggestions, enhancing storytelling, and helping with brainstorming ideas.
-
-- Personalized Recommendations: LLMs can analyze user preferences and behavior to offer personalized recommendations. This can be applied in various domains, such as recommending products, movies, books, music, and news articles.
-
-- Data Analysis and Insights: LLMs can process and analyze large amounts of textual data, extracting valuable insights and trends. They can be utilized for sentiment analysis, market research, data categorization, and summarization.
-
-- Virtual Training and Education: LLMs can provide interactive and personalized training experiences. They can simulate conversations, answer questions, and offer explanations, making them useful for virtual tutors, language learning apps, and educational platforms.
-
-- Code Generation: LLMs can assist in generating code snippets, providing developers with code suggestions, and aiding in software development tasks. They can understand programming languages and help with debugging and problem-solving.
-
-- Virtual Simulations and Games: LLMs can enhance virtual simulations and games by generating dynamic and engaging narratives, responding to user actions, and creating immersive experiences.
-
-- Research and Knowledge Discovery: LLMs can assist researchers by providing access to vast amounts of information, summarizing research papers, answering complex questions, and aiding in knowledge discovery.
-
-These use cases highlight the versatility of integrating LLMs into applications, enabling developers to enhance user experiences, automate tasks, and provide intelligent and engaging interactions.
-
 ### Benefits
 - Cost-effectiveness: Our service provides full access to the endpoint at a significantly lower cost of only $5 per month. This makes it highly affordable for indie developers who may have limited budgets.
 
@@ -128,5 +97,5 @@ end;
 </p>
 <h5 align="center">
 
-Made with :heart: in Delphi
+Made in Delphi :heart:
 </h5>
