@@ -100,8 +100,8 @@ const
   { API key environment variable }
   CEnvVarApiKey = 'PhippsAIApiKey';
 
-  { Summery Prompts }
-  CChatSummeryPrompt =
+  { Summary Prompts }
+  CChatSummaryPrompt =
     'Please provide a comprehensive summary of this conversation? The summary ' +
     'should cover all the key points and main ideas presented in the original ' +
     'text, while also condensing the information into a concise and ' +
@@ -115,7 +115,7 @@ const
     'summary should avoid any personal biases or interpretations and remain ' +
     'objective and factual throughout.';
 
-  CTextSummeryPrompt =
+  CTextSummaryPrompt =
     'Please create a concise summery of the following text';
 
 type
@@ -555,10 +555,10 @@ begin
     LApi.ApiKey := FApiKey;
     LApi.FProxy := FProxy;
 
-    // set the summery prompt
-    LApi.Assistant := Format('%s down to no more than %d sentences', [CTextSummeryPrompt, LNumSentences]);
+    // set the summary prompt
+    LApi.Assistant := Format('%s down to no more than %d sentences', [CTextSummaryPrompt, LNumSentences]);
 
-    // set text to be summerized
+    // set text to be summarized
     LApi.Question := aText;
 
     // use the text completion endpoint
