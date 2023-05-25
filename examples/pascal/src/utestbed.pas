@@ -82,6 +82,8 @@ uses
   System.SysUtils,
   System.Classes,
   System.IOUtils,
+  WinApi.ShellAPI,
+  WinApi.Windows,
   PhippsAI;
 
 procedure RunTest(const aNum: Integer);
@@ -219,7 +221,7 @@ begin
 end;
 
 { ---------------------------------------------------------------------------
-  The following examples provide a illustration of the practical
+  The following example provide a illustration of the practical
   implementation of the text completion endpoint. Specifically, they showcase
   how this endpoint can be effectively utilized to generate concise summaries
   of text, while also allowing the user to specify the desired number of
@@ -251,12 +253,95 @@ begin
     // get summarized text
     LText := LApi.SummarizeText(LText, 3);
 
-    // display summarized text info
-    WriteLn;
-    WriteLn('[SUMMERY]');
-    WriteLn('Size: ', LText.Length, ' bytes');
-    WriteLn('Text: ', LText);
+    if LApi.Success then
+      begin
+        // display summarized text info
+        WriteLn(CRLF+'[SUMMERY]');
+        WriteLn('Size: ', LText.Length, ' bytes');
+        WriteLn('Text: ', LText);
+      end
+    else
+      begin
+        WriteLn(CRLF+'Error: ', LApi.Error);
+      end;
 
+  finally
+    // free api instance
+    LApi.Free;
+  end;
+end;
+{ ---------------------------------------------------------------------------
+  The following example provides an overview of the implementation of
+  multilingual text-to-speech synthesis. It supports a range of languages and
+  showcases the process of converting written text into spoken audio.
+----------------------------------------------------------------------------- }
+procedure Test04;
+var
+  LApi: TPhippsAIApi;
+  LTTSStream: TStream;
+  LFileStream: TFileStream;
+  LText: string;
+  LLang: TTSLanguage;
+
+  // play voice.mp3 via default registered .mp3 player
+  procedure ShellOpen(const aFilename, Params, Dir: string);
+  begin
+    if aFilename.IsEmpty then Exit;
+    ShellExecute(0, 'OPEN', PChar(aFilename), PChar(Params), PChar(Dir), SW_SHOWNORMAL);
+  end;
+
+begin
+  // create api instance
+  LApi := TPhippsAIApi.Create;
+  try
+    // init your api key, if not defined here, it will try to read it from
+    // PhippsAIApiKey environment variable
+
+    //LApi.ApiKey := 'YOUR_API_KEY';
+
+    // init text
+    LText := 'Hello. I am PhippsAI, your personal AI assistant. How may I help you?'; // english
+    //LText := 'Ciao. Sono PhippsAI, il tuo assistente AI personale. Come posso aiutarla?'; // italian
+
+    // init language
+    LLang := en_au; // english australian
+    //LLang := it; // italian
+
+    // do tts in australia english
+    LTTSStream := LApi.TextToSpeech(LText, LLang);
+    try
+      if LApi.Success then
+        begin
+          // create a file stream to save the audio
+          LFileStream := TFile.Create('voice.mp3');
+          try
+            // copy audio to file
+            LFileStream.CopyFrom(LTTSStream);
+
+            // check if file exist and display info
+            if TFile.Exists('voice.mp3') then
+              begin
+                WriteLn('Success!');
+
+                // now try to play voice.mp3 file
+                ShellOpen('voice.mp3', '', '');
+              end
+            else
+              WriteLn('Failed to save voice.mp3');
+          finally
+            // free the file stream
+            LFileStream.Free;
+          end;
+        end
+      else
+        begin
+          // display error message
+          WriteLn('Error: ', LApi.Error);
+        end;
+    finally
+      // free the tts stream
+      LTTSStream.Free;
+    end;
   finally
     // free api instance
     LApi.Free;
@@ -269,12 +354,13 @@ begin
     1: Test01;
     2: Test02;
     3: Test03;
+    4: Test04;
   end;
 end;
 
 procedure RunTests;
 begin
-  RunTest(2);
+  RunTest(4);
   Pause;
 end;
 

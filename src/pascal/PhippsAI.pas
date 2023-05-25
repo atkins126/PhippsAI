@@ -79,6 +79,7 @@ unit PhippsAI;
 interface
 
 uses
+  System.TypInfo,
   System.Generics.Collections,
   System.SysUtils,
   System.Classes,
@@ -119,6 +120,12 @@ const
     'Please create a concise summery of the following text';
 
 type
+  { TTSLanguage }
+  TTSLanguage = (af, sq, ar, hy, ca, zh, zh_cn, zh_tw, zh_yue, hr, cs, da,
+    nl, en, en_au, en_uk, en_us, eo, fi, fr, de, el, ht, hi, hu, &is, id,
+    it, ja, ko, la, lv, mk, no, pl, pt, pt_br, ro, ru, sr, sk, es, es_es,
+    es_us, sw, sv, ta, th, tr, vi, cy);
+
   { TBaseObject }
   TBaseObject = class
   public
@@ -141,6 +148,7 @@ type
     procedure SetApiKey(const AValue: string);
     procedure SetAssistant(const AValue: string);
     procedure SetQuestion(const AValue: string);
+    function GetTTSLangStr(aLanguage: TTSLanguage): string;
   public
     property ApiKey: string read FApiKey write SetApiKey;
     property Success: Boolean read FSuccess;
@@ -151,9 +159,12 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
     procedure SetProxy(const aHost: string; aPort: Integer; const aUserName: string = ''; const aPassword: string = ''; const AScheme: string = '');
+    function GetTTSLanguageName(const ALanguage: TTSLanguage): string;
     procedure ChatCompletion;
     procedure TextCompletion;
     function SummarizeText(const AText: string; const ANumSentences: Integer): string;
+    function TokenCount(const AText: string): Integer;
+    function TextToSpeech(const AText: string; ALanguage: TTSLanguage): TStream;
   end;
 
 { Routines }
@@ -317,6 +328,11 @@ begin
   FQuestion := LQuestion;
 end;
 
+function TPhippsAIApi.GetTTSLangStr(ALanguage: TTSLanguage): string;
+begin
+  Result := GetEnumName(TypeInfo(TTSLanguage), Ord(ALanguage)).Replace('_', '-');
+end;
+
 constructor TPhippsAIApi.Create;
 begin
   inherited;
@@ -332,6 +348,63 @@ end;
 procedure TPhippsAIApi.SetProxy(const aHost: string; aPort: Integer; const aUserName: string = ''; const aPassword: string = ''; const AScheme: string = '');
 begin
   FProxy.Create(aHost, aPort, aUserName, aPassword, aScheme);
+end;
+
+function TPhippsAIApi.GetTTSLanguageName(const ALanguage: TTSLanguage): string;
+begin
+  case ALanguage of
+    af: Result := 'Afrikaans';
+    sq: Result := 'Albanian';
+    ar: Result := 'Arabic';
+    hy: Result := 'Armenian';
+    ca: Result := 'Catalan';
+    zh: Result := 'Chinese';
+    zh_cn: Result := 'Chinese (Mandarin/China)';
+    zh_tw: Result := 'Chinese (Mandarin/Taiwan)';
+    zh_yue: Result := 'Chinese (Cantonese)';
+    hr: Result := 'Croatian';
+    cs: Result := 'Czech';
+    da: Result := 'Danish';
+    nl: Result := 'Dutch';
+    en: Result := 'English';
+    en_au: Result := 'English (Australia)';
+    en_uk: Result := 'English (United Kingdom)';
+    en_us: Result := 'English (United States)';
+    eo: Result := 'Esperanto';
+    fi: Result := 'Finnish';
+    fr: Result := 'French';
+    de: Result := 'German';
+    el: Result := 'Greek';
+    ht: Result := 'Haitian Creole';
+    hi: Result := 'Hindi';
+    hu: Result := 'Hungarian';
+    &is: Result := 'Icelandic';
+    id: Result := 'Indonesian';
+    it: Result := 'Italian';
+    ja: Result := 'Japanese';
+    ko: Result := 'Korean';
+    la: Result := 'Latin';
+    lv: Result := 'Latvian';
+    mk: Result := 'Macedonian';
+    no: Result := 'Norwegian';
+    pl: Result := 'Polish';
+    pt: Result := 'Portuguese';
+    pt_br: Result := 'Portuguese (Brazil)';
+    ro: Result := 'Romanian';
+    ru: Result := 'Russian';
+    sr: Result := 'Serbian';
+    sk: Result := 'Slovak';
+    es: Result := 'Spanish';
+    es_es: Result := 'Spanish (Spain)';
+    es_us: Result := 'Spanish (United States)';
+    sw: Result := 'Swahili';
+    sv: Result := 'Swedish';
+    ta: Result := 'Tamil';
+    th: Result := 'Thai';
+    tr: Result := 'Turkish';
+    vi: Result := 'Vietnamese';
+    cy: Result := 'Welsh'
+  end;
 end;
 
 procedure TPhippsAIApi.ChatCompletion;
@@ -564,17 +637,227 @@ begin
     // use the text completion endpoint
     LApi.TextCompletion;
 
+    // set response status
+    FSuccess := LApi.Success;
+    FError := LApi.Error;
+
     // return answer on sugges
     if LApi.Success then
-      Result := LApi.Answer
-    else
-      // otherwise return error
-      Result := LApi.Error;
+        Result := LApi.Answer;
   finally
     // free api instance
     LApi.Free;
   end;
 
+end;
+
+function TPhippsAIApi.TokenCount(const AText: string): Integer;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+  LPostData: TStringStream;
+  LJson: TJsonObject;
+  LString: string;
+begin
+  Result := 0;
+
+  // clear error string
+  FError := '';
+
+  // clear status
+  FSuccess := False;
+
+  // validate for empty apikey
+  if FApiKey.IsEmpty then
+  begin
+    FError := 'API key was empty';
+    Exit;
+  end;
+
+  // validate for empty question
+  if AText.IsEmpty then
+  begin
+    FError := 'Text was empty';
+    Exit;
+  end;
+
+  try
+    // create a http client object
+    LClient := THTTPClient.Create;
+    try
+      // init proxy
+      LClient.ProxySettings := FProxy;
+
+      // set header content type
+      LClient.CustomHeaders['Content-Type'] := 'application/json';
+
+      // create json object
+      LJson := TJsonObject.Create;
+      try
+        // init endpoint data
+        LJson.AddPair('apikey', FApiKey);
+        LJson.AddPair('content', AText);
+
+        // save the json string
+        LString := LJson.ToString;
+      finally
+        LJson.Free;
+      end;
+
+    // create a post data stream
+    LPostData := TStringStream.Create(LString, TEncoding.UTF8);
+    try
+      // call the chat endpoint
+      LResponse := LClient.Post(CBaseUrl+'/tokens', LPostData);
+    finally
+      // free post data stream object
+      LPostData.Free;
+    end;
+
+    // check for OK response status code
+    if LResponse.StatusCode = 200 then
+      begin
+        // create json object from content
+        LJson := TJsonObject.ParseJSONValue(LResponse.ContentAsString) as TJsonObject;
+        try
+          // save the response data
+          FSuccess := FindJsonValue(LJson, 'success').Value.ToBoolean;
+          FError := FindJsonValue(LJson, 'message').Value;
+          Result := FindJsonValue(LJson, 'count').Value.ToInteger
+        finally
+          // free json object
+          LJson.Free;
+        end;
+      end
+    else
+      begin
+        // we did not get a OK response so save the error
+        FError := Format('HTTP response code %d: %s', [LResponse.StatusCode, LResponse.StatusText]);
+      end;
+    finally
+      // free http client object
+      LClient.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      // we got an exception, save as error
+      FError := E.Message;
+    end;
+  end;
+end;
+
+function TPhippsAIApi.TextToSpeech(const AText: string; ALanguage: TTSLanguage): TStream;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+  LPostData: TStringStream;
+  LJson: TJsonObject;
+  LString: string;
+  LLanguage: string;
+begin
+  Result := nil;
+
+  // clear error string
+  FError := '';
+
+  // clear status
+  FSuccess := False;
+
+  // validate for empty apikey
+  if FApiKey.IsEmpty then
+  begin
+    FError := 'API key was empty';
+    Exit;
+  end;
+
+  // validate for empty question
+  if AText.IsEmpty then
+  begin
+    FError := 'Text was empty';
+    Exit;
+  end;
+
+  // get language enum string
+  LLanguage := GetTTSLangStr(ALanguage);
+
+  try
+    // create a http client object
+    LClient := THTTPClient.Create;
+    try
+      // init proxy
+      LClient.ProxySettings := FProxy;
+
+      // set header content type
+      LClient.CustomHeaders['Content-Type'] := 'application/json';
+
+      // create json object
+      LJson := TJsonObject.Create;
+      try
+        // init endpoint data
+        LJson.AddPair('apikey', FApiKey);
+        LJson.AddPair('text', AText);
+        LJson.AddPair('lang', LLanguage);
+
+        // save the json string
+        LString := LJson.ToString;
+      finally
+        LJson.Free;
+      end;
+
+    // create a post data stream
+    LPostData := TStringStream.Create(LString, TEncoding.UTF8);
+    try
+      // call the chat endpoint
+      LResponse := LClient.Post(CBaseUrl+'/tts', LPostData);
+    finally
+      // free post data stream object
+      LPostData.Free;
+    end;
+
+    // check for OK response status code
+    if LResponse.StatusCode = 200 then
+      begin
+        //if LResponse.HeaderValue['content-type'] = then
+        if LResponse.HeaderValue['content-type'] = 'audio/mpeg' then
+          begin
+            // get voice
+            Result := TMemoryStream.Create;
+            Result.CopyFrom(LResponse.ContentStream);
+            FSuccess := True;
+            FError := '';
+          end
+        else
+          begin
+            // create json object from content
+            LJson := TJsonObject.ParseJSONValue(LResponse.ContentAsString) as TJsonObject;
+            try
+              // get error message
+              FSuccess := False;
+              FError := FindJsonValue(LJson, 'message').Value;
+            finally
+              // free json object
+              LJson.Free;
+            end;
+          end;
+      end
+    else
+      begin
+        FSuccess := False;
+        FError := Format('HTTP status code %d: %s', [LResponse.StatusCode, LResponse.StatusText]);
+      end;
+    finally
+      // free http client object
+      LClient.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      // we got an exception, save as error
+      FError := E.Message;
+      FSuccess := False;
+    end;
+  end;
 end;
 
 initialization
