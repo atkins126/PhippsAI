@@ -154,6 +154,8 @@ type
     procedure ChatCompletion;
     procedure TextCompletion;
     function SummarizeText(const AText: string; const ANumSentences: Integer): string;
+    function TokenCount(const AText: string): Integer;
+    function TextToSpeech(const AText, ALanguage: string): TStream;
   end;
 
 { Routines }
@@ -575,6 +577,200 @@ begin
     LApi.Free;
   end;
 
+end;
+
+function TPhippsAIApi.TokenCount(const AText: string): Integer;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+  LPostData: TStringStream;
+  LJson: TJsonObject;
+  LString: string;
+begin
+  Result := 0;
+
+  // clear error string
+  FError := '';
+
+  // clear status
+  FSuccess := False;
+
+  // validate for empty apikey
+  if FApiKey.IsEmpty then
+  begin
+    FError := 'API key was empty';
+    Exit;
+  end;
+
+  // validate for empty question
+  if AText.IsEmpty then
+  begin
+    FError := 'Text was empty';
+    Exit;
+  end;
+
+  try
+    // create a http client object
+    LClient := THTTPClient.Create;
+    try
+      // init proxy
+      LClient.ProxySettings := FProxy;
+
+      // set header content type
+      LClient.CustomHeaders['Content-Type'] := 'application/json';
+
+      // create json object
+      LJson := TJsonObject.Create;
+      try
+        // init endpoint data
+        LJson.AddPair('apikey', FApiKey);
+        LJson.AddPair('content', AText);
+
+        // save the json string
+        LString := LJson.ToString;
+      finally
+        LJson.Free;
+      end;
+
+    // create a post data stream
+    LPostData := TStringStream.Create(LString, TEncoding.UTF8);
+    try
+      // call the chat endpoint
+      LResponse := LClient.Post(CBaseUrl+'/tokens', LPostData);
+    finally
+      // free post data stream object
+      LPostData.Free;
+    end;
+
+    // check for OK response status code
+    if LResponse.StatusCode = 200 then
+      begin
+        // create json object from content
+        LJson := TJsonObject.ParseJSONValue(LResponse.ContentAsString) as TJsonObject;
+        try
+          // save the response data
+          FSuccess := FindJsonValue(LJson, 'success').Value.ToBoolean;
+          FError := FindJsonValue(LJson, 'message').Value;
+          Result := FindJsonValue(LJson, 'count').Value.ToInteger
+        finally
+          // free json object
+          LJson.Free;
+        end;
+      end
+    else
+      begin
+        // we did not get a OK response so save the error
+        FError := Format('HTTP response code %d: %s', [LResponse.StatusCode, LResponse.StatusText]);
+      end;
+    finally
+      // free http client object
+      LClient.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      // we got an exception, save as error
+      FError := E.Message;
+    end;
+  end;
+end;
+
+function TPhippsAIApi.TextToSpeech(const AText, ALanguage: string): TStream;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+  LPostData: TStringStream;
+  LJson: TJsonObject;
+  LString: string;
+begin
+  Result := nil;
+
+  // clear error string
+  FError := '';
+
+  // clear status
+  FSuccess := False;
+
+  // validate for empty apikey
+  if FApiKey.IsEmpty then
+  begin
+    FError := 'API key was empty';
+    Exit;
+  end;
+
+  // validate for empty question
+  if AText.IsEmpty then
+  begin
+    FError := 'Text was empty';
+    Exit;
+  end;
+
+  try
+    // create a http client object
+    LClient := THTTPClient.Create;
+    try
+      // init proxy
+      LClient.ProxySettings := FProxy;
+
+      // set header content type
+      LClient.CustomHeaders['Content-Type'] := 'application/json';
+
+      // create json object
+      LJson := TJsonObject.Create;
+      try
+        // init endpoint data
+        LJson.AddPair('apikey', FApiKey);
+        LJson.AddPair('text', AText);
+        LJson.AddPair('lang', ALanguage);
+
+        // save the json string
+        LString := LJson.ToString;
+      finally
+        LJson.Free;
+      end;
+
+    // create a post data stream
+    LPostData := TStringStream.Create(LString, TEncoding.UTF8);
+    try
+      // call the chat endpoint
+      LResponse := LClient.Post(CBaseUrl+'/tts', LPostData);
+    finally
+      // free post data stream object
+      LPostData.Free;
+    end;
+
+    // check for OK response status code
+    if LResponse.StatusCode = 200 then
+      begin
+        Result := TMemoryStream.Create;
+        Result.CopyFrom(LResponse.ContentStream);
+        FSuccess := True;
+        FError := '';
+      end
+    else
+      begin
+        // create json object from content
+        LJson := TJsonObject.ParseJSONValue(LResponse.ContentAsString) as TJsonObject;
+        try
+          // save the response data
+          FSuccess := FindJsonValue(LJson, 'success').Value.ToBoolean;
+          FError := FindJsonValue(LJson, 'message').Value;
+        finally
+          // free json object
+          LJson.Free;
+        end;
+      end;
+    finally
+      // free http client object
+      LClient.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      // we got an exception, save as error
+      FError := E.Message;
+    end;
+  end;
 end;
 
 initialization
