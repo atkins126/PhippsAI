@@ -637,12 +637,13 @@ begin
     // use the text completion endpoint
     LApi.TextCompletion;
 
+    // set response status
+    FSuccess := LApi.Success;
+    FError := LApi.Error;
+
     // return answer on sugges
     if LApi.Success then
-      Result := LApi.Answer
-    else
-      // otherwise return error
-      FError := LApi.Error;
+        Result := LApi.Answer;
   finally
     // free api instance
     LApi.Free;
@@ -817,23 +818,33 @@ begin
     // check for OK response status code
     if LResponse.StatusCode = 200 then
       begin
-        Result := TMemoryStream.Create;
-        Result.CopyFrom(LResponse.ContentStream);
-        FSuccess := True;
-        FError := '';
+        //if LResponse.HeaderValue['content-type'] = then
+        if LResponse.HeaderValue['content-type'] = 'audio/mpeg' then
+          begin
+            // get voice
+            Result := TMemoryStream.Create;
+            Result.CopyFrom(LResponse.ContentStream);
+            FSuccess := True;
+            FError := '';
+          end
+        else
+          begin
+            // create json object from content
+            LJson := TJsonObject.ParseJSONValue(LResponse.ContentAsString) as TJsonObject;
+            try
+              // get error message
+              FSuccess := False;
+              FError := FindJsonValue(LJson, 'message').Value;
+            finally
+              // free json object
+              LJson.Free;
+            end;
+          end;
       end
     else
       begin
-        // create json object from content
-        LJson := TJsonObject.ParseJSONValue(LResponse.ContentAsString) as TJsonObject;
-        try
-          // save the response data
-          FSuccess := FindJsonValue(LJson, 'success').Value.ToBoolean;
-          FError := FindJsonValue(LJson, 'message').Value;
-        finally
-          // free json object
-          LJson.Free;
-        end;
+        FSuccess := False;
+        FError := Format('HTTP status code %d: %s', [LResponse.StatusCode, LResponse.StatusText]);
       end;
     finally
       // free http client object
@@ -844,6 +855,7 @@ begin
     begin
       // we got an exception, save as error
       FError := E.Message;
+      FSuccess := False;
     end;
   end;
 end;

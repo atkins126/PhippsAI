@@ -253,11 +253,17 @@ begin
     // get summarized text
     LText := LApi.SummarizeText(LText, 3);
 
-    // display summarized text info
-    WriteLn;
-    WriteLn('[SUMMERY]');
-    WriteLn('Size: ', LText.Length, ' bytes');
-    WriteLn('Text: ', LText);
+    if LApi.Success then
+      begin
+        // display summarized text info
+        WriteLn(CRLF+'[SUMMERY]');
+        WriteLn('Size: ', LText.Length, ' bytes');
+        WriteLn('Text: ', LText);
+      end
+    else
+      begin
+        WriteLn(CRLF+'Error: ', LApi.Error);
+      end;
 
   finally
     // free api instance
