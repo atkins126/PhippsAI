@@ -79,6 +79,7 @@ unit PhippsAI;
 interface
 
 uses
+  System.TypInfo,
   System.Generics.Collections,
   System.SysUtils,
   System.Classes,
@@ -119,6 +120,12 @@ const
     'Please create a concise summery of the following text';
 
 type
+  { TTSLanguage }
+  TTSLanguage = (af, sq, ar, hy, ca, zh, zh_cn, zh_tw, zh_yue, hr, cs, da,
+    nl, en, en_au, en_uk, en_us, eo, fi, fr, de, el, ht, hi, hu, &is, id,
+    it, ja, ko, la, lv, mk, no, pl, pt, pt_br, ro, ru, sr, sk, es, es_es,
+    es_us, sw, sv, ta, th, tr, vi, cy);
+
   { TBaseObject }
   TBaseObject = class
   public
@@ -141,6 +148,7 @@ type
     procedure SetApiKey(const AValue: string);
     procedure SetAssistant(const AValue: string);
     procedure SetQuestion(const AValue: string);
+    function GetTTSLangStr(aLanguage: TTSLanguage): string;
   public
     property ApiKey: string read FApiKey write SetApiKey;
     property Success: Boolean read FSuccess;
@@ -151,11 +159,12 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
     procedure SetProxy(const aHost: string; aPort: Integer; const aUserName: string = ''; const aPassword: string = ''; const AScheme: string = '');
+    function GetTTSLanguageName(const ALanguage: TTSLanguage): string;
     procedure ChatCompletion;
     procedure TextCompletion;
     function SummarizeText(const AText: string; const ANumSentences: Integer): string;
     function TokenCount(const AText: string): Integer;
-    function TextToSpeech(const AText, ALanguage: string): TStream;
+    function TextToSpeech(const AText: string; ALanguage: TTSLanguage): TStream;
   end;
 
 { Routines }
@@ -319,6 +328,11 @@ begin
   FQuestion := LQuestion;
 end;
 
+function TPhippsAIApi.GetTTSLangStr(ALanguage: TTSLanguage): string;
+begin
+  Result := GetEnumName(TypeInfo(TTSLanguage), Ord(ALanguage)).Replace('_', '-');
+end;
+
 constructor TPhippsAIApi.Create;
 begin
   inherited;
@@ -334,6 +348,63 @@ end;
 procedure TPhippsAIApi.SetProxy(const aHost: string; aPort: Integer; const aUserName: string = ''; const aPassword: string = ''; const AScheme: string = '');
 begin
   FProxy.Create(aHost, aPort, aUserName, aPassword, aScheme);
+end;
+
+function TPhippsAIApi.GetTTSLanguageName(const ALanguage: TTSLanguage): string;
+begin
+  case ALanguage of
+    af: Result := 'Afrikaans';
+    sq: Result := 'Albanian';
+    ar: Result := 'Arabic';
+    hy: Result := 'Armenian';
+    ca: Result := 'Catalan';
+    zh: Result := 'Chinese';
+    zh_cn: Result := 'Chinese (Mandarin/China)';
+    zh_tw: Result := 'Chinese (Mandarin/Taiwan)';
+    zh_yue: Result := 'Chinese (Cantonese)';
+    hr: Result := 'Croatian';
+    cs: Result := 'Czech';
+    da: Result := 'Danish';
+    nl: Result := 'Dutch';
+    en: Result := 'English';
+    en_au: Result := 'English (Australia)';
+    en_uk: Result := 'English (United Kingdom)';
+    en_us: Result := 'English (United States)';
+    eo: Result := 'Esperanto';
+    fi: Result := 'Finnish';
+    fr: Result := 'French';
+    de: Result := 'German';
+    el: Result := 'Greek';
+    ht: Result := 'Haitian Creole';
+    hi: Result := 'Hindi';
+    hu: Result := 'Hungarian';
+    &is: Result := 'Icelandic';
+    id: Result := 'Indonesian';
+    it: Result := 'Italian';
+    ja: Result := 'Japanese';
+    ko: Result := 'Korean';
+    la: Result := 'Latin';
+    lv: Result := 'Latvian';
+    mk: Result := 'Macedonian';
+    no: Result := 'Norwegian';
+    pl: Result := 'Polish';
+    pt: Result := 'Portuguese';
+    pt_br: Result := 'Portuguese (Brazil)';
+    ro: Result := 'Romanian';
+    ru: Result := 'Russian';
+    sr: Result := 'Serbian';
+    sk: Result := 'Slovak';
+    es: Result := 'Spanish';
+    es_es: Result := 'Spanish (Spain)';
+    es_us: Result := 'Spanish (United States)';
+    sw: Result := 'Swahili';
+    sv: Result := 'Swedish';
+    ta: Result := 'Tamil';
+    th: Result := 'Thai';
+    tr: Result := 'Turkish';
+    vi: Result := 'Vietnamese';
+    cy: Result := 'Welsh'
+  end;
 end;
 
 procedure TPhippsAIApi.ChatCompletion;
@@ -571,7 +642,7 @@ begin
       Result := LApi.Answer
     else
       // otherwise return error
-      Result := LApi.Error;
+      FError := LApi.Error;
   finally
     // free api instance
     LApi.Free;
@@ -675,13 +746,14 @@ begin
   end;
 end;
 
-function TPhippsAIApi.TextToSpeech(const AText, ALanguage: string): TStream;
+function TPhippsAIApi.TextToSpeech(const AText: string; ALanguage: TTSLanguage): TStream;
 var
   LClient: THTTPClient;
   LResponse: IHTTPResponse;
   LPostData: TStringStream;
   LJson: TJsonObject;
   LString: string;
+  LLanguage: string;
 begin
   Result := nil;
 
@@ -705,6 +777,9 @@ begin
     Exit;
   end;
 
+  // get language enum string
+  LLanguage := GetTTSLangStr(ALanguage);
+
   try
     // create a http client object
     LClient := THTTPClient.Create;
@@ -721,7 +796,7 @@ begin
         // init endpoint data
         LJson.AddPair('apikey', FApiKey);
         LJson.AddPair('text', AText);
-        LJson.AddPair('lang', ALanguage);
+        LJson.AddPair('lang', LLanguage);
 
         // save the json string
         LString := LJson.ToString;

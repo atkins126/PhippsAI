@@ -275,7 +275,7 @@ var
   LTTSStream: TStream;
   LFileStream: TFileStream;
   LText: string;
-  LLang: string;
+  LLang: TTSLanguage;
 
   // play voice.mp3 via default registered .mp3 player
   procedure ShellOpen(const aFilename, Params, Dir: string);
@@ -294,10 +294,12 @@ begin
     //LApi.ApiKey := 'YOUR_API_KEY';
 
     // init text
-    LText := 'Hello. I am PhippsAI, your personal AI assistant. How may I help you?';
+    LText := 'Hello. I am PhippsAI, your personal AI assistant. How may I help you?'; // english
+    //LText := 'Ciao. Sono PhippsAI, il tuo assistente AI personale. Come posso aiutarla?'; // italian
 
     // init language
-    LLang := 'en-au';
+    LLang := en_au; // english australian
+    //LLang := it; // italian
 
     // do tts in australia english
     LTTSStream := LApi.TextToSpeech(LText, LLang);
