@@ -35,14 +35,21 @@ In summary, choosing our PhippsAI service provides a cost-effective, user-friend
 
 #### Usage
 - Obtain your API Key by sponsoring this project at https://github.com/sponsors/tinyBigGAMES. Upon sponsorship confirmation, we will issue you an API key for full access as long as your sponsorship remains active.
-- Define the environment variable "PhippsAIApiKey" and assign your API key. You may need to reboot your machine for the changes to take effect.
-- Load the Delphi project group file "PhippsAI (Delphi).groupproj" located in "installdir\distro\repo\examples\pascal".
+- Define the environment variable `PhippsAIApiKey` and assign your API key. You may need to reboot your machine for the changes to take effect.
+- Load the Delphi project group file `PhippsAI (Delphi).groupproj` located in `installdir\distro\repo\examples\pascal`.
 - Refer to the examples for more information on how to use the API.
 ```Delphi
-// Basic example showing how to query PhippsAI
 uses
   PhippsAI;
     
+{ ---------------------------------------------------------------------------
+  This example demonstrates the process of configuring and invoking the text
+  completion endpoint by providing a question and awaiting a response. The call
+  operates in a blocking manner, thereby halting execution until it completes
+  successfully or encounters an error. In a subsequent example, we will
+  illustrate the usage of the chat endpoint in a non-blocking manner.
+----------------------------------------------------------------------------- }
+
 var
   LApi: TPhippsAIApi;
 begin
@@ -51,7 +58,8 @@ begin
   try
     // init your api key, if not defined here, it will try to read it from
     // PhippsAIApiKey environment variable
-    LApi.ApiKey := 'YOUR_API_KEY';
+
+    //LApi.ApiKey := 'YOUR_API_KEY';
 
     // init your assistant
     LApi.Assistant := 'PhippsAI, your AI assistent';
@@ -60,22 +68,22 @@ begin
     LApi.Question := 'what is the Delphi language?';
 
     // display question
-    WriteLn(LFCR+'Question: '+LFCR, LApi.Question);
+    WriteLn(CRLF+'Question: '+CRLF, LApi.Question);
 
-    // call chat api
-    LApi.Chat;
+    // call text completion api
+    LApi.TextCompletion;
 
     if LApi.Success then
       // display answer on success
-      WriteLn(LFCR+'Answer: '+LFCR, LApi.Answer)
+      WriteLn(CRLF+'Answer: '+CRLF, LApi.Answer)
     else
       // otherwise display error message
-      WriteLn(LFCR+'Error: '+LFCR, LApi.Error);
+      WriteLn(CRLF+'Error: '+CRLF, LApi.Error);
   finally
     // free api instance
     LApi.Free;
   end;
-end;
+end.
 ```
 
 #### Media

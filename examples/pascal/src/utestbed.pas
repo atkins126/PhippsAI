@@ -81,6 +81,7 @@ interface
 uses
   System.SysUtils,
   System.Classes,
+  System.IOUtils,
   PhippsAI;
 
 procedure RunTest(const aNum: Integer);
@@ -95,8 +96,8 @@ begin
 end;
 
 { ---------------------------------------------------------------------------
-  This example demonstrates the process of configuring and invoking the chat
-  endpoint by providing a question and awaiting a response. The Ask call
+  This example demonstrates the process of configuring and invoking the text
+  completion endpoint by providing a question and awaiting a response. The call
   operates in a blocking manner, thereby halting execution until it completes
   successfully or encounters an error. In a subsequent example, we will
   illustrate the usage of the chat endpoint in a non-blocking manner.
@@ -122,8 +123,8 @@ begin
     // display question
     WriteLn(CRLF+'Question: '+CRLF, LApi.Question);
 
-    // call chat api
-    LApi.Ask;
+    // call text completion api
+    LApi.TextCompletion;
 
     if LApi.Success then
       // display answer on success
@@ -138,14 +139,14 @@ begin
 end;
 
 { ---------------------------------------------------------------------------
-  This example serves as a fundamental illustration of a chatbot,
-  demonstrating how to retain context using the Language Model (LM) and
-  engage in a conversation. It is important to note that this example does
-  not account for token limitations. As the conversation progresses and
-  approaches the token limit, the LM will respond with an error message
-  indicating that the input size exceeds the maximum allowable tokens. In a
-  forthcoming example, we will showcase a solution for effectively managing
-  this issue.
+  This example serves as a fundamental illustration of a chatbot, using the
+  chat completion endpoint, demonstrating how to retain context using the
+  Language Model (LM) and engage in a conversation. It is important to note
+  that this example does not account for token limitations. As the
+  conversation progresses and approaches the token limit, the LM will respond
+  with an error message indicating that the input size exceeds the maximum
+  allowable tokens. In a forthcoming example, we will showcase a solution for
+  effectively managing this issue.
 ----------------------------------------------------------------------------- }
 procedure Test02;
 var
@@ -185,8 +186,8 @@ begin
         // init the question you wish to ask
         LApi.Question := LContext.Text;
 
-        // ask you question
-        LApi.Ask;
+        // call the chat completion api
+        LApi.ChatCompletion;
 
         if LApi.Success then
           begin
@@ -201,7 +202,7 @@ begin
           end;
 
         // display the response
-        WriteLn(CRLF+CRLF+'Answer:');
+        WriteLn(CRLF+'Answer:');
         WriteLn(LResponse+CRLF);
 
       // continue to loop until break
@@ -217,11 +218,57 @@ begin
   end;
 end;
 
+{ ---------------------------------------------------------------------------
+  The following examples provide a illustration of the practical
+  implementation of the text completion endpoint. Specifically, they showcase
+  how this endpoint can be effectively utilized to generate concise summaries
+  of text, while also allowing the user to specify the desired number of
+  paragraphs in the output. By leveraging this functionality, users can
+  obtain condensed and informative summaries that effectively capture the key
+  points of the original text.
+----------------------------------------------------------------------------- }
+procedure Test03;
+var
+  LApi: TPhippsAIApi;
+  LText: string;
+begin
+  // create an api instance
+  LApi := TPhippsAIApi.Create;
+  try
+    // init your api key, if not defined here, it will try to read it from
+    // PhippsAIApiKey environment variable
+
+    //LApi.ApiKey := 'YOUR_API_KEY';
+
+    // read in text to be summerized
+    LText := TFile.ReadAllText('summarize.txt');
+
+    // display original text info
+    WriteLn('[ORIGINAL]');
+    WriteLn('Size: ', Round(LText.Length * 0.001), ' killobytes');
+    WriteLn('Text: ', LText.Substring(0, 256), '...');
+
+    // get summarized text
+    LText := LApi.SummarizeText(LText, 3);
+
+    // display summarized text info
+    WriteLn;
+    WriteLn('[SUMMERY]');
+    WriteLn('Size: ', LText.Length, ' bytes');
+    WriteLn('Text: ', LText);
+
+  finally
+    // free api instance
+    LApi.Free;
+  end;
+end;
+
 procedure RunTest(const aNum: Integer);
 begin
   case aNum of
     1: Test01;
     2: Test02;
+    3: Test03;
   end;
 end;
 

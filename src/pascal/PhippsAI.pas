@@ -92,13 +92,31 @@ const
   CRLF = CR+LF;
 
   {$IFDEF PHIPPSAI_LOCAL}
-  CUrl = 'http://127.0.0.1:8080/api/v1/chat';
+  CBaseUrl = 'http://127.0.0.1:9000/api/v1';
   {$ELSE}
-  CUrl = 'https://phippsai.com/api/v1/chat';
+  CBaseUrl = 'https://phippsai.com/api/v1';
   {$ENDIF}
 
   { API key environment variable }
   CEnvVarApiKey = 'PhippsAIApiKey';
+
+  { Summary Prompts }
+  CChatSummaryPrompt =
+    'Please provide a comprehensive summary of this conversation? The summary ' +
+    'should cover all the key points and main ideas presented in the original ' +
+    'text, while also condensing the information into a concise and ' +
+    'easy-to-understand format. Please ensure that the summary includes relevant ' +
+    'details and examples that support the main ideas, while avoiding any ' +
+    'unnecessary information or repetition. To ensure accuracy, please read the ' +
+    'text carefully and pay attention to any nuances or complexities in the ' +
+    'language. The length of the summary should be appropriate for the length ' +
+    'and complexity of the original text, providing a clear and accurate ' +
+    'overview without omitting any important information. Additionally, the ' +
+    'summary should avoid any personal biases or interpretations and remain ' +
+    'objective and factual throughout.';
+
+  CTextSummaryPrompt =
+    'Please create a concise summery of the following text';
 
 type
   { TBaseObject }
@@ -133,7 +151,9 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
     procedure SetProxy(const aHost: string; aPort: Integer; const aUserName: string = ''; const aPassword: string = ''; const AScheme: string = '');
-    procedure Ask;
+    procedure ChatCompletion;
+    procedure TextCompletion;
+    function SummarizeText(const AText: string; const ANumSentences: Integer): string;
   end;
 
 { Routines }
@@ -314,7 +334,7 @@ begin
   FProxy.Create(aHost, aPort, aUserName, aPassword, aScheme);
 end;
 
-procedure TPhippsAIApi.Ask;
+procedure TPhippsAIApi.ChatCompletion;
 var
   LClient: THTTPClient;
   LResponse: IHTTPResponse;
@@ -372,7 +392,7 @@ begin
     LPostData := TStringStream.Create(LString, TEncoding.UTF8);
     try
       // call the chat endpoint
-      LResponse := LClient.Post(CUrl, LPostData);
+      LResponse := LClient.Post(CBaseUrl+'/chat', LPostData);
     finally
       // free post data stream object
       LPostData.Free;
@@ -388,7 +408,7 @@ begin
           FSuccess := FindJsonValue(LJson, 'success').Value.ToBoolean;
           FError := FindJsonValue(LJson, 'error').Value;
           Question := FindJsonValue(LJson, 'question').Value;
-          FAnswer := FindJsonValue(LJson, 'answer').Value;
+          FAnswer := SanitizeFromJson(FindJsonValue(LJson, 'answer').Value);
         finally
           // free json object
           LJson.Free;
@@ -410,6 +430,151 @@ begin
       FError := E.Message;
     end;
   end;
+end;
+
+procedure TPhippsAIApi.TextCompletion;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+  LPostData: TStringStream;
+  LJson: TJsonObject;
+  LString: string;
+  LQuestion: string;
+begin
+  // clear error string
+  FError := '';
+
+  // clear status
+  FSuccess := False;
+
+  // validate for empty apikey
+  if FApiKey.IsEmpty then
+  begin
+    FError := 'API key was empty';
+    Exit;
+  end;
+
+  // validate for empty question
+  if FQuestion.IsEmpty then
+  begin
+    FError := 'Question was empty';
+    Exit;
+  end;
+
+  try
+    // create a http client object
+    LClient := THTTPClient.Create;
+    try
+      // init proxy
+      LClient.ProxySettings := FProxy;
+
+      // set header content type
+      LClient.CustomHeaders['Content-Type'] := 'application/json';
+
+      // create json object
+      LJson := TJsonObject.Create;
+      try
+        // init endpoint data
+        LJson.AddPair('apikey', FApiKey);
+        LQuestion := FAssistant + ' : ' + FQuestion;
+        LQuestion := LQuestion.Trim;
+        LJson.AddPair('question', LQuestion);
+
+        // save the json string
+        LString := LJson.ToString;
+      finally
+        LJson.Free;
+      end;
+
+    // create a post data stream
+    LPostData := TStringStream.Create(LString, TEncoding.UTF8);
+    try
+      // call the chat endpoint
+      LResponse := LClient.Post(CBaseUrl+'/text', LPostData);
+    finally
+      // free post data stream object
+      LPostData.Free;
+    end;
+
+    // check for OK response status code
+    if LResponse.StatusCode = 200 then
+      begin
+        // create json object from content
+        LJson := TJsonObject.ParseJSONValue(LResponse.ContentAsString) as TJsonObject;
+        try
+          // save the response data
+          FSuccess := FindJsonValue(LJson, 'success').Value.ToBoolean;
+          FError := FindJsonValue(LJson, 'error').Value;
+          Question := FindJsonValue(LJson, 'question').Value;
+          FAnswer := SanitizeFromJson(FindJsonValue(LJson, 'answer').Value);
+        finally
+          // free json object
+          LJson.Free;
+        end;
+      end
+    else
+      begin
+        // we did not get a OK response so save the error
+        FError := Format('HTTP response code %d: %s', [LResponse.StatusCode, LResponse.StatusText]);
+      end;
+    finally
+      // free http client object
+      LClient.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      // we got an exception, save as error
+      FError := E.Message;
+    end;
+  end;
+end;
+
+function TPhippsAIApi.SummarizeText(const AText: string; const ANumSentences: Integer): string;
+var
+  LApi: TPhippsAIApi;
+  LNumSentences: Integer;
+begin
+  // set return to empty string by default
+  Result := '';
+
+  // check for empty text
+  if AText.IsEmpty then Exit;
+
+  // init number of sentences to summerize down to
+  LNumSentences := ANumSentences;
+
+  // validate sentence range
+  if LNumSentences < 0 then
+    LNumSentences := 1;
+
+  // create a api instance
+  LApi := TPhippsAIApi.Create;
+  try
+    // use same setting as parent instance
+    LApi.ApiKey := FApiKey;
+    LApi.FProxy := FProxy;
+
+    // set the summary prompt
+    LApi.Assistant := Format('%s down to no more than %d sentences', [CTextSummaryPrompt, LNumSentences]);
+
+    // set text to be summarized
+    LApi.Question := aText;
+
+    // use the text completion endpoint
+    LApi.TextCompletion;
+
+    // return answer on sugges
+    if LApi.Success then
+      Result := LApi.Answer
+    else
+      // otherwise return error
+      Result := LApi.Error;
+  finally
+    // free api instance
+    LApi.Free;
+  end;
+
 end;
 
 initialization
